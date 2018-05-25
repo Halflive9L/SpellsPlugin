@@ -7,18 +7,20 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Snowball;
-import org.bukkit.entity.Spellcaster;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
+import pgDev.bukkit.DisguiseCraft.DisguiseCraft;
+import pgDev.bukkit.DisguiseCraft.api.DisguiseCraftAPI;
+import pgDev.bukkit.DisguiseCraft.disguise.Disguise;
+import pgDev.bukkit.DisguiseCraft.disguise.DisguiseType;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,25 +32,35 @@ import java.util.Spliterator;
 
 public class PlayerListener implements Listener {
 
-    File file;
-    List<String> Spells;
-    FileConfiguration playerData;
-    int index = 0;
+    private File file;
+    private List<String> spells;
+    private int index = 0;
+    DisguiseCraftAPI dcAPI;
 
     public PlayerListener(File dataFolder) {
         this.file = dataFolder;
+        setupDisguiseCraft();
     }
 
+
+    private void setupDisguiseCraft() {
+        dcAPI = DisguiseCraft.getAPI();
+    }
+
+    //TODO: Map spells on Spell class to make spell usage generic without massive if-else
     @EventHandler
     public void onPlayerInteractBlock(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if (player.getInventory().getItemInMainHand().getType() == Material.RECORD_3 && event.getAction().equals(Action.LEFT_CLICK_AIR))
         {
-
-            //player.getWorld().strikeLightning(player.getTargetBlock((Set<Material>) null, 200).getLocation());
-            //player.launchProjectile(Snowball.class);
-            player.getWorld().spawnEntity(player.getTargetBlock( null, 5).getLocation()
-                    , EntityType.CHICKEN);
+            player.sendMessage("Index" + index+ " - spell: " + spells.get(index));
+            if(spells.get(index).equals("Avis")) {
+                player.sendMessage(spells.get(index));
+                player.getWorld().spawnEntity(player.getTargetBlock(null, 5).getLocation()
+                        , EntityType.CHICKEN);
+            } else {
+                player.launchProjectile(Snowball.class);
+            }
         }
         if(player.getInventory().getItemInMainHand().getType() == Material.RECORD_3 && event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
             switchSpell(player);
@@ -56,8 +68,9 @@ public class PlayerListener implements Listener {
     }
 
     private void switchSpell(Player player) {
-        player.sendMessage("§eSpell set: §5" + Spells.get(index));
-        index = index < Spells.size() -1 ? index+1 : 0;
+        index = index < spells.size() -1 ? index+1 : 0;
+        player.sendMessage("§eSpell set: §5" + spells.get(index));
+
     }
 
     @EventHandler
@@ -65,8 +78,16 @@ public class PlayerListener implements Listener {
         Player player = playerJoinEvent.getPlayer();
         File playerFile =  new File ( file + File.separator + "plugins/essentials/userdata", player.getUniqueId() + ".yml");
         FileConfiguration playerData = YamlConfiguration.loadConfiguration(playerFile);
-        this.Spells = (List<String>)playerData.get("Spells");
-        player.sendMessage(Spells.toString());
+        this.spells = (List<String>)playerData.get("Spells");
+        player.sendMessage(spells.toString());
+    }
+
+    @EventHandler
+    public void onPlayerHit(EntityDamageByEntityEvent e) {
+        Player player = (Player)e.getEntity();
+        Disguise disguise = new Disguise(1, DisguiseType.Chicken);
+        dcAPI.disguisePlayer(player, disguise);
+        player.sendMessage("You've been hit");
     }
 }
 

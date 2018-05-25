@@ -3,3 +3,4 @@ description: Cast spells from an item
 author: Albus
 version: 1.0
 main: halflive9.bukkit.spells.Main
+depend: [DisguiseCraft]
